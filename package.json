@@ -1,0 +1,30 @@
+{
+  "name": "translator",
+  "version": "1.0.0",
+  "description": "Hệ thống phát hiện và thay thế các pattern trong văn bản tiếng Việt/Anh bằng placeholder",
+  "license": "MIT",
+  "author": "Hung Ho",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "example": "node example.js",
+    "test": "node example.js"
+  },
+  "keywords": [
+    "regex",
+    "pattern-matching",
+    "vietnamese",
+    "text-processing",
+    "placeholder"
+  ],
+  "exports": {
+    ".": "./main.js",
+    "./regex": "./regex.js",
+    "./fileUtils": "./fileUtils.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "dotenv": "^16.4.7"
+  }
+}
