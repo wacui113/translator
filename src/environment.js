@@ -70,7 +70,7 @@ const env = {
     TRANSLATION_TEMPLATE: getEnv('TRANSLATION_TEMPLATE', 'prompt/translation_template.md'),
     
     // File Paths
-    INPUT_FILE: getEnv('INPUT_FILE', 'test.txt'),
+    INPUT_FILE: getEnv('INPUT_FILE', 'original.txt'),
     OUTPUT_DIR: getEnv('OUTPUT_DIR', '.'),
     
     // Other configurations (add more as needed)
