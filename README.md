@@ -1,340 +1,165 @@
-# Vietnamese to Chinese Translator
+# Vietnamese to Chinese Translator (TypeScript)
 
-🚀 Automated translation tool from Vietnamese to Traditional Chinese using Google Gemini AI with placeholder management system.
+TypeScript port of [konie-nhinhi-translator-go](https://github.com/wacui113/konie-nhinhi-translator-go).  
+Automated translation from Vietnamese to Traditional Chinese (Taiwan) using Google Gemini AI, with placeholder handling for product codes, proper nouns, and technical terms.
 
-## 📋 Features
+## Features
 
-- ✅ **Smart Placeholder System**: Automatically extracts and preserves proper nouns, product codes, and technical terms
-- ✅ **Gemini AI Integration**: Uses Google Gemini 2.5 Pro for high-quality translation
-- ✅ **Unicode Support**: Full Vietnamese and Chinese character support
-- ✅ **Template System**: Customizable translation prompts and templates
-- ✅ **Modular Architecture**: Clean, organized, and maintainable code structure
-- ✅ **Environment Configuration**: Easy configuration via environment variables
+- **Smart translation:** Context-aware (e.g. "Housing" for cable vs. lamp).
+- **Data preservation:** Keeps product codes, proper nouns, acronyms (SOP, NG, OK), and numbers intact via regex extraction.
+- **CLI:** Same usage as the Go version: `-input`, `-output`, `-model`, etc.
+- **TypeScript:** Typed codebase, build with `npm run build`.
+- **Unicode:** UTF-8 with NFC normalization.
 
-## 🏗️ Project Structure
+## Installation
+
+```bash
+cd translator
+npm install
+```
+
+## Configuration
+
+1. Copy `.env.example` to `.env` (or create `.env`).
+2. Set your Google API key:
+
+```env
+GOOGLE_API_KEY=AIzaSy...
+DEFAULT_MODEL=gemini-2.5-flash
+```
+
+Get an API key: [Google AI Studio](https://aistudio.google.com/app/apikey).
+
+## Usage
+
+**Default (reads `original.txt`, writes `output_final.txt`):**
+
+```bash
+npm run build
+npm start
+```
+
+**CLI (same as Go version):**
+
+```bash
+node dist/main.js -input=original.txt -output=ketqua.txt -model=gemini-1.5-pro
+# or short form
+node dist/main.js -i original.txt -o ketqua.txt -m gemini-1.5-pro
+```
+
+**Help:**
+
+```bash
+node dist/main.js --help
+```
+
+**Development (run without building):**
+
+```bash
+npm run dev
+# with args: npm run dev -- -i original.txt -o out.txt
+```
+
+### CLI options
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--input` | `-i` | Input file path (default: `original.txt`) |
+| `--output` | `-o` | Output file path (default: `output_final.txt`) |
+| `--model` | `-m` | Gemini model (default: `gemini-2.5-flash`) |
+| `--key` | `-k` | Google API key (overrides env) |
+| `--prompt` | `-p` | System prompt file path |
+| `--template` | `-t` | Translation template file path |
+| `--help` | `-h` | Show help |
+| `--telegram-token` | `-T` | Telegram bot token (for `npm run telegram`) |
+| `--telegram-bot-id` | — | Telegram bot user ID, optional |
+| `--telegram-poll-interval` | — | Poll interval in ms (default: 30000) |
+
+Resolution order: **CLI flag > environment variable > default.**
+
+### Telegram bot config
+
+When running the Telegram bot (`npm run telegram`), you can pass bot token and options via **config** (env or CLI):
+
+**Environment variables (e.g. in `.env`):**
+
+```env
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
+TELEGRAM_BOT_ID=123456789          # optional, bot's numeric user ID
+TELEGRAM_POLL_INTERVAL_MS=30000
+```
+
+**CLI flags:**
+
+```bash
+npm run telegram -- -T 123456:ABC-DEF...
+npm run telegram -- --telegram-token 123456:ABC-DEF... --telegram-poll-interval 15000
+```
+
+Same resolution order: CLI overrides env.
+
+## Project structure
 
 ```
 translator/
-├── main.js                              # Main entry point
-├── .env                                 # Environment variables (create from .env.example)
-├── package.json                         # Dependencies
-├── src/                                 # Source code
-│   ├── translator.js                    # Core translation module
-│   ├── environment.js                   # Environment configuration
-│   └── utils/                           # Utility modules
-│       ├── file.utils.js                # File I/O operations
-│       └── regex.utils.js               # Placeholder & regex utilities
-├── prompt/                              # AI prompts & templates
-│   ├── system_prompt_v3.md              # System prompt (current)
-│   └── translation_template.md          # Translation template
-└── test_1.txt                           # Input file (example)
+├── main.ts                 # Entry point (CLI + workflow)
+├── tsconfig.json
+├── src/
+│   ├── environment.ts      # Env + CLI (commander)
+│   ├── translator.ts       # Gemini translation
+│   └── utils/
+│       ├── file.utils.ts   # UTF-8 file I/O, fileExists
+│       └── regex.utils.ts  # Placeholder extract/restore
+├── prompt/
+│   ├── system_prompt_v3.md
+│   └── translation_template.md
+└── dist/                   # Compiled JS (after npm run build)
 ```
 
-## 📦 Installation
+## Translation flow (same as Go)
 
-### Prerequisites
+1. **Phase 1 – Extraction:** Replace sensitive segments with placeholders (Vietnamese names, product codes, parentheses, English names, acronyms).
+2. **Phase 2 – Translation:** Send placeholderized text to Gemini.
+3. **Phase 3 – Restoration:** Replace placeholders back with original values.
+4. **Phase 4 – Save:** Write result to the file given by `-output` or default.
 
-- Node.js >= 18.x
-- Google AI API Key ([Get it here](https://aistudio.google.com/app/apikey))
+## Customization
 
-### Setup
+- **Translation style:** Edit `prompt/system_prompt_v3.md`.
+- **Output format:** Edit `prompt/translation_template.md`.
 
-1. **Clone the repository**
-   ```bash
-   cd translator
-   ```
+## Telegram bot
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment**
-   
-   Create a `.env` file in the root directory:
-   ```env
-   GOOGLE_API_KEY=your_api_key_here
-   DEFAULT_MODEL=gemini-2.5-pro
-   DEFAULT_SYSTEM_PROMPT=prompt/system_prompt_v3.md
-   TRANSLATION_TEMPLATE=prompt/translation_template.md
-   INPUT_FILE=test_1.txt
-   ```
-
-## 🚀 Usage
-
-### Basic Usage
-
-Run the translator with default configuration:
+Long-running server that polls for new messages and replies with translated text:
 
 ```bash
-node main.js
+npm run build
+npm run telegram
 ```
 
-This will:
-1. Read input from `test_1.txt` (or file specified in `INPUT_FILE` env var)
-2. Extract placeholders for names, product codes, etc.
-3. Translate the text to Traditional Chinese
-4. Restore placeholders with original Vietnamese values
-5. Save output to `output_final.txt`
+Requires `GOOGLE_API_KEY` and `TELEGRAM_BOT_TOKEN` (env or `-T`). Optional: `TELEGRAM_BOT_ID`, `TELEGRAM_POLL_INTERVAL_MS`.
 
-### Debug Mode
+## Scripts
 
-Run with detailed logging:
+| Script | Command | Description |
+|--------|---------|-------------|
+| build | `npm run build` | Compile TypeScript to `dist/` |
+| start | `npm start` | Run `node dist/main.js` (file mode) |
+| telegram | `npm run telegram` | Run Telegram bot server |
+| dev | `npm run dev` | Run with tsx (no build) |
+| test | `npm test` | Run with `--help` |
 
-```bash
-node main.js
-```
+## Comparison with Go version
 
-The script will show:
-- Each extraction step with counts
-- Translation progress
-- Final mapping of all placeholders
+This repo re-implements [konie-nhinhi-translator-go](https://github.com/wacui113/konie-nhinhi-translator-go) in TypeScript:
 
-### Custom Input File
+- Same 4-phase workflow and 5 extraction rounds.
+- Same CLI flags: `-input`, `-output`, `-model`, `-key`, `-prompt`, `-template`.
+- Validation: requires `GOOGLE_API_KEY`, checks input file exists.
+- Output path: `-output` sets the output file path (not only directory).
 
-```bash
-INPUT_FILE=my_document.txt node main.js
-```
+See `COMPARISON.md` for a detailed feature comparison.
 
-### Custom Model
+## License
 
-```bash
-DEFAULT_MODEL=gemini-2.0-flash-exp node main.js
-```
-
-### Custom System Prompt
-
-```bash
-DEFAULT_SYSTEM_PROMPT=prompt/system_prompt_v2.md node main.js
-```
-
-## 🔄 How It Works
-
-### Translation Flow
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     PHASE 1: EXTRACTION                     │
-│  Extract placeholders from Vietnamese text                  │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-    Step 1: Vietnamese Names (Nguyễn Thị Hồng Cúc)
-                            ↓
-    Step 2: Product Codes (5606302VL)
-                            ↓
-    Step 3: Parentheses Content (SLEEVE)
-                            ↓
-    Step 4: English Names (Taillight, Chiplight)
-                            ↓
-    Step 5: Acronyms (QC, PCB, IPQC)
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│          Text with placeholders: ${VIETNAMESE_NAME_1}       │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                    PHASE 2: TRANSLATION                     │
-│           Send to Gemini AI with placeholders               │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                    PHASE 3: RESTORATION                     │
-│      Replace placeholders with Vietnamese originals         │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                     PHASE 4: SAVE FILES                     │
-│              Save final output to disk                      │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Placeholder System
-
-The translator extracts specific patterns and replaces them with placeholders:
-
-| Type | Pattern | Example | Placeholder |
-|------|---------|---------|-------------|
-| Vietnamese Names | 2-3+ words with diacritics | Nguyễn Thị Hồng Cúc | ${VIETNAMESE_NAME_1} |
-| Product Codes | Alphanumeric >= 6 chars | 5606302VL | ${PRODUCT_CODE_1} |
-| Parentheses | ASCII content in () | (SLEEVE) | ${PARENTHESES_1} |
-| English Names | Capitalized >= 5 chars | Taillight | ${ENGLISH_NAME_1} |
-| Acronyms | All caps >= 3 chars | QC, PCB | ${ACRONYM_1} |
-
-**Why placeholders?**
-- Preserves proper nouns and technical terms
-- Prevents AI from mistranslating names
-- Maintains original Vietnamese names in output
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-All configuration is in `src/environment.js`:
-
-```javascript
-const env = {
-    GOOGLE_API_KEY: getEnv('GOOGLE_API_KEY'),
-    DEFAULT_MODEL: getEnv('DEFAULT_MODEL', 'gemini-2.5-pro'),
-    DEFAULT_SYSTEM_PROMPT: getEnv('DEFAULT_SYSTEM_PROMPT', 'prompt/system_prompt_v3.md'),
-    TRANSLATION_TEMPLATE: getEnv('TRANSLATION_TEMPLATE', 'prompt/translation_template.md'),
-    INPUT_FILE: getEnv('INPUT_FILE', 'test_1.txt'),
-    OUTPUT_DIR: getEnv('OUTPUT_DIR', '.'),
-    NODE_ENV: getEnv('NODE_ENV', 'development'),
-};
-```
-
-### System Prompts
-
-Located in `prompt/` directory:
-
-- `system_prompt_v3.md` - Current version with optimized terminology
-- `system_prompt_v2.md` - Previous version with dictionary
-- `system_prompt_v1.md` - Original version
-
-### Translation Templates
-
-Templates use `{{placeholder}}` syntax:
-
-```markdown
-You are a translator. Translate the following text from Vietnamese to Chinese.
-
-\`\`\`
-{{text}}
-\`\`\`
-```
-
-The `{{text}}` placeholder is automatically replaced with the input text.
-
-## 🛠️ Development
-
-### Debug Commands
-
-**Run with specific input:**
-```bash
-INPUT_FILE=my_test.txt node main.js
-```
-
-**Test individual modules:**
-```bash
-# Test file utils
-node -e "import('./src/utils/file.utils.js').then(m => console.log(m.readUnicodeFileSync('test.txt')))"
-
-# Test regex utils
-node src/example.js
-```
-
-**Check environment config:**
-```bash
-node -e "import('./src/environment.js').then(m => console.log(m.default))"
-```
-
-### Project Commands
-
-```bash
-# Install dependencies
-npm install
-
-# Run translator
-node main.js
-
-# Run with custom env
-INPUT_FILE=custom.txt DEFAULT_MODEL=gemini-2.0-flash-exp node main.js
-```
-
-### Output Files
-
-After running, you'll find:
-
-- `output_final.txt` - Final translated text with Vietnamese names restored
-
-### Module Usage
-
-Import and use individual modules:
-
-```javascript
-// Translation
-import { translate } from './src/translator.js';
-const result = await translate('Xin chào');
-
-// File operations
-import { readUnicodeFileSync } from './src/utils/file.utils.js';
-const content = readUnicodeFileSync('input.txt');
-
-// Placeholder extraction
-import { matchVietnameseNames } from './src/utils/regex.utils.js';
-const result = matchVietnameseNames('Nguyễn Văn A');
-```
-
-## 📊 Example
-
-### Input (Vietnamese)
-
-```
-Đơn vị : Phòng QC 
-Người báo cáo: Nguyễn Thị A B
-Ngày báo cáo: 02/11/2024
-
-1/ Giám sát, theo dõi QC nguyên liệu nhập, QC kiểm tra lưu động, thành phẩm.
- * Theo dõi sửa khuôn linh kiện lens ABC ABC bị nứt
-```
-
-### Processing
-
-```
-Step 1: Extract Vietnamese Names
-   ✓ Found 1 match
-
-Step 2: Extract Product Codes
-   ✓ Found 0 matches
-
-Step 3: Extract Parentheses Content
-   ✓ Found 0 matches
-
-Step 4: Extract English Names
-   ✓ Found 2 matches
-
-Step 5: Extract Acronyms
-   ✓ Found 5 matches
-
-Step 6: Translating text...
-   ✓ Translation completed
-
-Step 7: Restoring placeholders...
-   ✓ Placeholders restored
-```
-
-### Output (Traditional Chinese)
-
-```
-部門：品管部
-報告人：Nguyễn Thị A B
-報告日期：2024年11月02日
-
-1/ 監督、追蹤進料品管、巡檢品管及成品品管。
- * 追蹤 ABC ABC 燈罩零件模具龜裂修復狀況。
-```
-
-## 📝 Notes
-
-- **API Costs**: Uses Google Gemini AI which may incur costs based on usage
-- **Rate Limits**: Be aware of API rate limits for your key
-- **Unicode**: Ensure your text editor supports UTF-8 encoding
-- **Placeholders**: Vietnamese names are preserved in the output (not translated to Chinese)
-
-## 🤝 Contributing
-
-This is an internal tool. For improvements or bug fixes:
-
-1. Test your changes thoroughly
-2. Update documentation if needed
-3. Follow the existing code structure
-
-## 📄 License
-
-Internal use only.
-
----
-
-**Last Updated:** November 23, 2025
-**Version:** 2.0.0
-
+MIT.
